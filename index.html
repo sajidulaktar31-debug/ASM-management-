@@ -1,81 +1,209 @@
+Aktar Super Mart – Complete Login + Billing POS (Frontend Only)
+
+Ye poora ready-to-use code hai jo:
+
+🔐 Owner ID login ke bina open nahi hoga
+
+🧾 Billing par automatic sale & stock update karega
+
+📱 Mobile + 💻 PC dono par kaam karega
+
+☁ GitHub Pages par direct host ho sakta hai
+
+
+
+---
+
+📁 Required Files (GitHub Repo me)
+
+login.html
+index.html
+
+
+---
+
+🔐 login.html (Owner Login – ID Card Based)
+
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Aktar Super Mart - Billing</title>
+<title>Owner Login - Aktar Super Mart</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{font-family:Arial;padding:15px}
-input,button{padding:8px;margin:5px}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-td,th{border:1px solid #ccc;padding:6px;text-align:center}
+body{font-family:Arial;background:#f4f4f4}
+.box{max-width:320px;margin:100px auto;background:#fff;padding:20px;border-radius:8px}
+input,button{width:100%;padding:10px;margin:8px 0}
+button{background:#2ecc71;border:none;color:#fff;font-size:16px}
 </style>
 </head>
-
 <body>
 
-<h2>🧾 Billing System</h2>
-
-<input id="barcode" placeholder="Scan Barcode">
-<input id="qty" type="number" value="1">
-<button onclick="addItem()">Add</button>
-
-<table>
-<thead>
-<tr>
-<th>Item</th><th>Qty</th><th>Price</th>
-</tr>
-</thead>
-<tbody id="bill"></tbody>
-</table>
-
-<h3>Total: ₹<span id="total">0</span></h3>
-
-<button onclick="checkout()">Checkout</button>
+<div class="box">
+<h3>🔐 Owner Login</h3>
+<input id="uid" placeholder="ID Card Number">
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<p id="msg" style="color:red"></p>
+</div>
 
 <script>
-let inventory = JSON.parse(localStorage.getItem("inventory")) || [
-  {barcode:"101",name:"Rice",price:50,stock:100},
-  {barcode:"102",name:"Oil",price:120,stock:50}
-];
+const OWNER_ID = "ASM-001";   // 🔁 Change if needed
+const OWNER_PASS = "1234";    // 🔁 Change password
 
-let bill = [];
-let total = 0;
-
-function addItem(){
-  let code = barcode.value;
-  let qty = Number(document.getElementById("qty").value);
-  let item = inventory.find(i=>i.barcode===code);
-  if(!item){ alert("Item not found"); return; }
-  if(item.stock < qty){ alert("Stock not enough"); return; }
-
-  item.stock -= qty;   // 🔥 STOCK UPDATE
-  bill.push({name:item.name,qty,price:item.price});
-  total += item.price * qty;
-
-  render();
-  save();
-}
-
-function render(){
-  let html="";
-  bill.forEach(i=>{
-    html += `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.price*i.qty}</td></tr>`;
-  });
-  document.getElementById("bill").innerHTML=html;
-  document.getElementById("total").innerText=total;
-}
-
-function checkout(){
-  alert("Bill Done ✅");
-  bill=[];
-  total=0;
-  render();
-}
-
-function save(){
-  localStorage.setItem("inventory",JSON.stringify(inventory));
+function login(){
+  if(uid.value===OWNER_ID && pass.value===OWNER_PASS){
+    localStorage.setItem("ASM_LOGIN","YES");
+    location.href="index.html";
+  }else{
+    msg.innerText="❌ Invalid ID or Password";
+  }
 }
 </script>
 
 </body>
 </html>
+
+
+---
+
+🧾 index.html (Billing + Sale Update + Stock Control)
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Aktar Super Mart - Billing</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:Arial;background:#fafafa;padding:10px}
+h2{color:#2c3e50}
+input,button{padding:8px;margin:5px}
+button{background:#3498db;color:#fff;border:none}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #ccc;padding:6px;text-align:center}
+.alert{color:red;font-weight:bold}
+</style>
+</head>
+<body>
+
+<script>
+// 🔒 LOGIN PROTECTION
+if(localStorage.getItem("ASM_LOGIN")!=="YES"){
+  location.href="login.html";
+}
+</script>
+
+<h2>🧾 Billing – Aktar Super Mart</h2>
+<button onclick="logout()">Logout</button>
+
+<hr>
+
+<input id="barcode" placeholder="Scan Barcode">
+<input id="qty" type="number" value="1" min="1">
+<button onclick="addItem()">Add Item</button>
+
+<table>
+<thead>
+<tr><th>Item</th><th>Qty</th><th>Amount</th></tr>
+</thead>
+<tbody id="bill"></tbody>
+</table>
+
+<h3>Total: ₹ <span id="total">0</span></h3>
+<button onclick="checkout()">Checkout</button>
+
+<h3>⚠ Low Stock Alerts</h3>
+<div id="alerts"></div>
+
+<script>
+// 📦 INVENTORY (Auto saved)
+let inventory = JSON.parse(localStorage.getItem("ASM_INV")) || [
+ {barcode:"101",name:"Rice",price:50,stock:100,min:10},
+ {barcode:"102",name:"Oil",price:120,stock:40,min:5},
+ {barcode:"103",name:"Biscuit",price:10,stock:20,min:5}
+];
+
+let bill=[];
+let total=0;
+
+function addItem(){
+ let code=barcode.value;
+ let q=Number(qty.value);
+ let item=inventory.find(i=>i.barcode===code);
+
+ if(!item) return alert("Item not found");
+ if(item.stock<q) return alert("Stock not enough");
+
+ item.stock-=q;                 // 🔥 STOCK UPDATE
+ bill.push({name:item.name,qty:q,amt:item.price*q});
+ total+=item.price*q;
+
+ save();
+ render();
+}
+
+function render(){
+ let html="";
+ bill.forEach(i=>{
+  html+=`<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.amt}</td></tr>`;
+ });
+ billBox.innerHTML=html;
+ totalBox.innerText=total;
+ showAlerts();
+}
+
+function checkout(){
+ alert("✅ Bill Completed");
+ bill=[];
+ total=0;
+ render();
+}
+
+function showAlerts(){
+ alerts.innerHTML="";
+ inventory.forEach(i=>{
+  if(i.stock<=i.min){
+   alerts.innerHTML+=`<div class='alert'>${i.name} low stock (${i.stock})</div>`;
+  }
+ });
+}
+
+function save(){
+ localStorage.setItem("ASM_INV",JSON.stringify(inventory));
+}
+
+function logout(){
+ localStorage.removeItem("ASM_LOGIN");
+ location.href="login.html";
+}
+
+const billBox=document.getElementById("bill");
+const totalBox=document.getElementById("total");
+</script>
+
+</body>
+</html>
+
+
+---
+
+✅ System Final Result
+
+✔ Sirf ID Card Login se access ✔ Billing par sale quantity auto update ✔ Stock kam hote hi alert ✔ Data browser me safe (LocalStorage) ✔ Mobile + PC + Barcode Scanner support
+
+
+---
+
+🚀 Next Upgrade (jab bolo)
+
+📊 Daily / Monthly Sales Report
+
+📅 Expiry Date System
+
+👥 Staff Login
+
+🧾 GST Invoice Print
+
+🌐 Backend + Database
+
+
+Bas bolo Ricky 💪
