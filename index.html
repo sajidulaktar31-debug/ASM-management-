@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Aktar Super Mart - Billing</title>
+<style>
+body{font-family:Arial;padding:15px}
+input,button{padding:8px;margin:5px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+td,th{border:1px solid #ccc;padding:6px;text-align:center}
+</style>
+</head>
+
+<body>
+
+<h2>🧾 Billing System</h2>
+
+<input id="barcode" placeholder="Scan Barcode">
+<input id="qty" type="number" value="1">
+<button onclick="addItem()">Add</button>
+
+<table>
+<thead>
+<tr>
+<th>Item</th><th>Qty</th><th>Price</th>
+</tr>
+</thead>
+<tbody id="bill"></tbody>
+</table>
+
+<h3>Total: ₹<span id="total">0</span></h3>
+
+<button onclick="checkout()">Checkout</button>
+
+<script>
+let inventory = JSON.parse(localStorage.getItem("inventory")) || [
+  {barcode:"101",name:"Rice",price:50,stock:100},
+  {barcode:"102",name:"Oil",price:120,stock:50}
+];
+
+let bill = [];
+let total = 0;
+
+function addItem(){
+  let code = barcode.value;
+  let qty = Number(document.getElementById("qty").value);
+  let item = inventory.find(i=>i.barcode===code);
+  if(!item){ alert("Item not found"); return; }
+  if(item.stock < qty){ alert("Stock not enough"); return; }
+
+  item.stock -= qty;   // 🔥 STOCK UPDATE
+  bill.push({name:item.name,qty,price:item.price});
+  total += item.price * qty;
+
+  render();
+  save();
+}
+
+function render(){
+  let html="";
+  bill.forEach(i=>{
+    html += `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.price*i.qty}</td></tr>`;
+  });
+  document.getElementById("bill").innerHTML=html;
+  document.getElementById("total").innerText=total;
+}
+
+function checkout(){
+  alert("Bill Done ✅");
+  bill=[];
+  total=0;
+  render();
+}
+
+function save(){
+  localStorage.setItem("inventory",JSON.stringify(inventory));
+}
+</script>
+
+</body>
+</html>
