@@ -2,16 +2,15 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Aktar Super Mart - System</title>
+<title>Aktar Super Mart</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{font-family:Arial;background:#f4f6f8;padding:15px}
+body{font-family:Arial;background:#f1f5f9;padding:15px}
 .box{max-width:420px;margin:auto;background:#fff;padding:15px;border-radius:8px}
 .hidden{display:none}
-button{padding:8px 12px;background:#2563eb;color:#fff;border:none;border-radius:5px}
-input{padding:8px;width:100%;margin:6px 0}
-.card{background:#eef2ff;padding:10px;margin:8px 0;border-radius:6px}
-h2{margin-top:0}
+input,button{width:100%;padding:10px;margin:6px 0}
+button{background:#2563eb;color:#fff;border:none;border-radius:6px}
+.card{background:#e0e7ff;padding:10px;margin:8px 0;border-radius:6px}
 </style>
 </head>
 
@@ -20,102 +19,90 @@ h2{margin-top:0}
 <!-- LOGIN -->
 <div id="loginBox" class="box">
   <h2>Login</h2>
-  <input id="id" placeholder="ID">
-  <input id="pass" type="password" placeholder="Password">
+  <input id="uid" placeholder="User ID">
+  <input id="pwd" type="password" placeholder="Password">
   <button onclick="login()">Login</button>
   <p id="msg" style="color:red"></p>
 </div>
 
 <!-- OWNER DASHBOARD -->
-<div id="ownerDash" class="box hidden">
+<div id="ownerBox" class="box hidden">
   <h2>👑 Owner Dashboard</h2>
-  <div class="card">Total Products: <b id="pCount">0</b></div>
-  <div class="card">Total Stock: <b id="stock">0</b></div>
-  <div class="card">Total Sales: ₹<b id="sale">0</b></div>
+  <div class="card">Total Products: <b id="p">0</b></div>
+  <div class="card">Total Stock: <b id="s">0</b></div>
+  <div class="card">Total Sale: ₹<b id="sale">0</b></div>
   <button onclick="logout()">Logout</button>
 </div>
 
 <!-- EMPLOYEE INVENTORY -->
-<div id="employeeInv" class="box hidden">
+<div id="empBox" class="box hidden">
   <h2>👷 Weekly Inventory</h2>
-
-  <input class="audit" data-name="Rice" placeholder="Rice stock">
-  <input class="audit" data-name="Oil" placeholder="Oil stock">
-  <input class="audit" data-name="Sugar" placeholder="Sugar stock">
-
-  <button onclick="saveInventory()">Save Inventory</button>
-  <br><br>
+  <input class="inv" data-name="Rice" placeholder="Rice stock">
+  <input class="inv" data-name="Oil" placeholder="Oil stock">
+  <input class="inv" data-name="Sugar" placeholder="Sugar stock">
+  <button onclick="saveInv()">Save Inventory</button>
   <button onclick="logout()">Logout</button>
 </div>
 
 <script>
-// CREDENTIALS
-const OWNER_ID="OWNER01", OWNER_PASS="1234";
-const EMP_ID="EMP01", EMP_PASS="1111";
-
-// AUTO LOGIN CHECK
+// AUTO LOGIN
 const role = localStorage.getItem("role");
-if(role) loadRole(role);
+if(role) loadUI(role);
 
-// LOGIN
+// LOGIN FUNCTION
 function login(){
-  const id=document.getElementById("id").value;
-  const pass=document.getElementById("pass").value;
+  const id = uid.value.trim();
+  const pass = pwd.value.trim();
 
-  if(id===OWNER_ID && pass===OWNER_PASS){
+  if(id==="owner" && pass==="1234"){
     localStorage.setItem("role","owner");
-    loadRole("owner");
+    loadUI("owner");
   }
-  else if(id===EMP_ID && pass===EMP_PASS){
+  else if(id==="employee" && pass==="1111"){
     localStorage.setItem("role","employee");
-    loadRole("employee");
+    loadUI("employee");
   }
   else{
-    msg.innerText="❌ Invalid Login";
+    msg.innerText="❌ Wrong ID or Password";
   }
 }
 
-// LOAD ROLE UI
-function loadRole(role){
+// LOAD UI
+function loadUI(role){
   loginBox.classList.add("hidden");
 
   if(role==="owner"){
-    ownerDash.classList.remove("hidden");
+    ownerBox.classList.remove("hidden");
     loadDashboard();
   }
-
   if(role==="employee"){
-    employeeInv.classList.remove("hidden");
+    empBox.classList.remove("hidden");
   }
 }
 
-// DASHBOARD DATA
+// DASHBOARD
 function loadDashboard(){
   const inv = JSON.parse(localStorage.getItem("inventory")||"[]");
   let total=0;
-  inv.forEach(i=> total+=Number(i.stock));
-
-  pCount.innerText = inv.length;
-  stock.innerText = total;
+  inv.forEach(i=>total+=i.stock);
+  p.innerText = inv.length;
+  s.innerText = total;
   sale.innerText = localStorage.getItem("totalSale")||0;
 }
 
-// SAVE INVENTORY (EMPLOYEE ONLY)
-function saveInventory(){
+// SAVE INVENTORY
+function saveInv(){
   const data=[];
-  document.querySelectorAll(".audit").forEach(i=>{
+  document.querySelectorAll(".inv").forEach(i=>{
     data.push({name:i.dataset.name,stock:Number(i.value||0)});
   });
-
   localStorage.setItem("inventory",JSON.stringify(data));
-  localStorage.setItem("lastAudit",new Date().toDateString());
-
   alert("✅ Inventory Saved");
 }
 
 // LOGOUT
 function logout(){
-  localStorage.removeItem("role");
+  localStorage.clear();
   location.reload();
 }
 </script>
