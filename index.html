@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <title>Aktar Super Mart – POS & Inventory</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body{font-family:Arial;background:#f4f4f4;margin:0;padding:10px}
-.box{max-width:380px;margin:80px auto;background:#fff;padding:20px;border-radius:8px}
+body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
 .hidden{display:none}
+.box{background:#fff;padding:15px;border-radius:8px;max-width:420px;margin:20px auto}
 input,button{width:100%;padding:10px;margin:6px 0}
-button{border:none;color:#fff;font-size:15px}
+button{border:none;color:#fff;font-size:15px;border-radius:5px}
 .green{background:#28a745}
 .blue{background:#007bff}
 .red{background:#dc3545}
@@ -17,7 +18,7 @@ button{border:none;color:#fff;font-size:15px}
 table{width:100%;border-collapse:collapse;margin-top:10px}
 td,th{border:1px solid #ccc;padding:6px;text-align:center}
 .low{color:red;font-weight:bold}
-.auditBox{background:#fff;padding:10px;border-radius:8px}
+.expire{color:darkred;font-weight:bold}
 </style>
 </head>
 
@@ -25,197 +26,166 @@ td,th{border:1px solid #ccc;padding:6px;text-align:center}
 
 <!-- 🔐 LOGIN -->
 <div id="loginBox" class="box">
-<h3>🔐 Owner Login</h3>
+<h3>🔐 Login</h3>
+<select id="role">
+  <option value="owner">Owner</option>
+  <option value="employee">Employee</option>
+</select>
 <input id="uid" placeholder="ID Card Number">
 <input id="pass" type="password" placeholder="Password">
 <button class="green" onclick="login()">Login</button>
 <p id="msg" style="color:red"></p>
 </div>
 
-<!-- 🧾 DASHBOARD -->
-<div id="dashboard" class="hidden">
-
+<!-- 🧾 OWNER DASHBOARD -->
+<div id="ownerDash" class="hidden box">
+<h2>🧾 Aktar Super Mart – Owner</h2>
 <button class="red" onclick="logout()">Logout</button>
-<h2>🧾 Aktar Super Mart POS</h2>
 
 <input id="barcode" placeholder="Scan Barcode">
 <input id="qty" type="number" value="1" min="1">
-<button class="blue" onclick="addItem()">Add Item</button>
+<button class="blue" onclick="sell()">Add Item</button>
 
 <table>
-<thead>
-<tr><th>Item</th><th>Qty</th></tr>
-</thead>
+<thead><tr><th>Item</th><th>Qty</th></tr></thead>
 <tbody id="bill"></tbody>
 </table>
 
 <h3>Total Items Sold: <span id="total">0</span></h3>
 
 <hr>
-<h3>📦 Stock Status</h3>
-<div id="stockList"></div>
+<h3>📦 Stock + Expiry</h3>
+<div id="stockView"></div>
 
 <hr>
-<button class="gray" onclick="openAudit()">📋 Inventory / Audit (Employee)</button>
+<button class="gray" onclick="openAudit()">📋 Inventory / Audit</button>
 <button class="gray" onclick="viewAudit()">📊 View Last Audit</button>
+</div>
 
-<!-- 📋 AUDIT BOX -->
-<div id="auditBox" class="hidden auditBox">
-<h3>📋 Manual Inventory Audit</h3>
+<!-- 👤 EMPLOYEE AUDIT -->
+<div id="employeeDash" class="hidden box">
+<h3>📋 Employee Inventory Audit</h3>
 <input id="empName" placeholder="Employee Name">
 <div id="auditList"></div>
 <button class="green" onclick="saveAudit()">Save Inventory</button>
-<button class="red" onclick="closeAudit()">Close</button>
-</div>
-
+<button class="red" onclick="logout()">Logout</button>
 </div>
 
 <script>
-// 🔐 LOGIN DETAILS
-const OWNER_ID = "ASM-01";
-const OWNER_PASS = "1234";
+// ================= AUTH =================
+const OWNER_ID="ASM-01", OWNER_PASS="1234";
+const EMP_ID="EMP-01", EMP_PASS="0000";
 
-// 📦 INVENTORY DATA
-let stock = JSON.parse(localStorage.getItem("STOCK")) || {
-  "111":{name:"Rice",qty:50,min:10},
-  "222":{name:"Oil",qty:20,min:5},
-  "333":{name:"Sugar",qty:30,min:8}
-};
-
-let totalItems = 0;
-
-// 🔑 LOGIN
 function login(){
-  if(uid.value===OWNER_ID && pass.value===OWNER_PASS){
-    localStorage.setItem("ASM_LOGIN","YES");
-    showDashboard();
-  }else{
-    msg.innerText="❌ Invalid ID or Password";
-  }
+  if(role.value==="owner" && uid.value===OWNER_ID && pass.value===OWNER_PASS){
+    localStorage.setItem("LOGIN","OWNER");
+    showOwner();
+  }else if(role.value==="employee" && uid.value===EMP_ID && pass.value===EMP_PASS){
+    localStorage.setItem("LOGIN","EMP");
+    showEmployee();
+  }else msg.innerText="❌ Invalid Login";
 }
 
-// 🔓 LOGOUT
 function logout(){
-  localStorage.removeItem("ASM_LOGIN");
+  localStorage.clear();
   location.reload();
 }
 
-// 🧾 BILLING
-function addItem(){
-  let code = barcode.value;
-  let q = Number(qty.value);
+// ================= DATA =================
+let stock = JSON.parse(localStorage.getItem("STOCK")) || {
+ "111":{name:"Rice",qty:50,min:10,exp:"2026-03-01",cost:30,price:40},
+ "222":{name:"Oil",qty:20,min:5,exp:"2026-02-15",cost:110,price:130},
+ "333":{name:"Sugar",qty:30,min:8,exp:"2026-01-20",cost:38,price:45}
+};
 
-  if(!stock[code]) return alert("Item not found");
-  if(stock[code].qty < q) return alert("❌ Stock not enough");
+let total=0;
+let lastAudit = localStorage.getItem("LAST_AUDIT_DATE");
 
-  stock[code].qty -= q;
-  totalItems += q;
-
-  bill.innerHTML += `<tr><td>${stock[code].name}</td><td>${q}</td></tr>`;
-  total.innerText = totalItems;
-
-  saveStock();
-  showStock();
-  barcode.value="";
+// ================= OWNER =================
+function showOwner(){
+ loginBox.classList.add("hidden");
+ ownerDash.classList.remove("hidden");
+ showStock();
 }
 
-// 📦 SHOW STOCK
+function sell(){
+ let c=barcode.value, q=Number(qty.value);
+ if(!stock[c]) return alert("Item not found");
+
+ let exp=new Date(stock[c].exp);
+ if(exp < new Date()) return alert("❌ Item Expired");
+
+ if(stock[c].qty<q) return alert("❌ Not enough stock");
+
+ stock[c].qty-=q;
+ total+=q;
+ bill.innerHTML+=`<tr><td>${stock[c].name}</td><td>${q}</td></tr>`;
+ total.innerText=total;
+ save();
+ showStock();
+ barcode.value="";
+}
+
 function showStock(){
-  let html="";
-  for(let k in stock){
-    html += `${stock[k].name} : ${stock[k].qty}`;
-    if(stock[k].qty <= stock[k].min){
-      html += ` <span class="low">(LOW)</span>`;
-    }
-    html += "<br>";
-  }
-  stockList.innerHTML = html;
+ let html="";
+ for(let k in stock){
+  let d=(new Date(stock[k].exp)-new Date())/86400000;
+  html+=`${stock[k].name} : ${stock[k].qty}`;
+  if(stock[k].qty<=stock[k].min) html+=` <span class="low">(LOW)</span>`;
+  if(d<=30) html+=` <span class="expire">(EXP ${Math.ceil(d)}d)</span>`;
+  html+="<br>";
+ }
+ stockView.innerHTML=html;
 }
 
-// 💾 SAVE STOCK
-function saveStock(){
-  localStorage.setItem("STOCK",JSON.stringify(stock));
+function save(){
+ localStorage.setItem("STOCK",JSON.stringify(stock));
 }
 
-// 🖥️ DASHBOARD
-function showDashboard(){
-  loginBox.classList.add("hidden");
-  dashboard.classList.remove("hidden");
-  showStock();
-}
-
-// 🔁 AUTO LOGIN
-if(localStorage.getItem("ASM_LOGIN")==="YES"){
-  showDashboard();
-}
-
-// =======================
-// 📋 INVENTORY / AUDIT
-// =======================
-
+// ================= AUDIT (WEEKLY LOCK) =================
 function openAudit(){
-  auditBox.classList.remove("hidden");
-  let html="";
-  for(let code in stock){
-    html+=`
-      <b>${stock[code].name}</b><br>
-      System Stock: ${stock[code].qty}<br>
-      Actual Stock:
-      <input type="number" id="a_${code}" value="${stock[code].qty}">
-      <hr>
-    `;
-  }
-  auditList.innerHTML=html;
+ if(lastAudit){
+  let diff=(Date.now()-new Date(lastAudit))/86400000;
+  if(diff<7) return alert("❌ Inventory already done this week");
+ }
+ ownerDash.classList.add("hidden");
+ employeeDash.classList.remove("hidden");
+ let html="";
+ for(let k in stock){
+  html+=`${stock[k].name}<br>
+  System: ${stock[k].qty}<br>
+  Actual: <input type="number" id="a_${k}" value="${stock[k].qty}"><hr>`;
+ }
+ auditList.innerHTML=html;
 }
 
 function saveAudit(){
-  if(empName.value==="") return alert("Employee name required");
-
-  let report=[];
-  for(let code in stock){
-    let actual = Number(document.getElementById("a_"+code).value);
-    let system = stock[code].qty;
-    let diff = actual - system;
-
-    report.push({
-      item: stock[code].name,
-      system,
-      actual,
-      difference: diff
-    });
-
-    stock[code].qty = actual;
-  }
-
-  let auditRecord = {
-    employee: empName.value,
-    date: new Date().toLocaleString(),
-    report
-  };
-
-  localStorage.setItem("LAST_AUDIT",JSON.stringify(auditRecord));
-  saveStock();
-
-  alert("✅ Inventory Audit Saved");
-  closeAudit();
-  showStock();
+ if(empName.value==="") return alert("Employee name required");
+ let report=[];
+ for(let k in stock){
+  let a=Number(document.getElementById("a_"+k).value);
+  report.push({item:stock[k].name,system:stock[k].qty,actual:a,diff:a-stock[k].qty});
+  stock[k].qty=a;
+ }
+ let rec={emp:empName.value,date:new Date().toLocaleString(),report};
+ localStorage.setItem("LAST_AUDIT",JSON.stringify(rec));
+ localStorage.setItem("LAST_AUDIT_DATE",new Date());
+ save();
+ alert("✅ Inventory Saved");
+ logout();
 }
 
-function closeAudit(){
-  auditBox.classList.add("hidden");
-}
-
-// 📊 VIEW AUDIT
 function viewAudit(){
-  let data = JSON.parse(localStorage.getItem("LAST_AUDIT"));
-  if(!data) return alert("No audit found");
-
-  let msg = `EMPLOYEE: ${data.employee}\nDATE: ${data.date}\n\n`;
-  data.report.forEach(i=>{
-    msg += `${i.item} | System: ${i.system} | Actual: ${i.actual} | Diff: ${i.difference}\n`;
-  });
-  alert(msg);
+ let d=JSON.parse(localStorage.getItem("LAST_AUDIT"));
+ if(!d) return alert("No audit found");
+ let m=`EMP: ${d.emp}\nDATE: ${d.date}\n\n`;
+ d.report.forEach(i=>m+=`${i.item} | Sys:${i.system} Act:${i.actual} Diff:${i.diff}\n`);
+ alert(m);
 }
+
+// ================= AUTO LOGIN =================
+if(localStorage.getItem("LOGIN")==="OWNER") showOwner();
+if(localStorage.getItem("LOGIN")==="EMP") showEmployee();
 </script>
 
 </body>
