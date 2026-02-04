@@ -2,105 +2,87 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Aktar Super Mart</title>
+<title>ASM Login</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{font-family:Arial;background:#f1f5f9;padding:15px}
-.box{max-width:420px;margin:auto;background:#fff;padding:15px;border-radius:8px}
-.hidden{display:none}
-input,button{width:100%;padding:10px;margin:6px 0}
+body{font-family:Arial;background:#f3f4f6}
+.box{max-width:420px;margin:60px auto;background:#fff;padding:20px;border-radius:10px}
+input,button{width:100%;padding:10px;margin:8px 0}
 button{background:#2563eb;color:#fff;border:none;border-radius:6px}
-.card{background:#e0e7ff;padding:10px;margin:8px 0;border-radius:6px}
+.hidden{display:none}
 </style>
 </head>
-
 <body>
 
-<!-- LOGIN -->
-<div id="loginBox" class="box">
+<div id="login" class="box">
   <h2>Login</h2>
   <input id="uid" placeholder="User ID">
   <input id="pwd" type="password" placeholder="Password">
-  <button onclick="login()">Login</button>
-  <p id="msg" style="color:red"></p>
+  <button onclick="doLogin()">Login</button>
+  <p id="err" style="color:red"></p>
 </div>
 
-<!-- OWNER DASHBOARD -->
-<div id="ownerBox" class="box hidden">
+<div id="owner" class="box hidden">
   <h2>👑 Owner Dashboard</h2>
-  <div class="card">Total Products: <b id="p">0</b></div>
-  <div class="card">Total Stock: <b id="s">0</b></div>
-  <div class="card">Total Sale: ₹<b id="sale">0</b></div>
+  <p>Total Products: <b id="p">0</b></p>
+  <p>Total Stock: <b id="s">0</b></p>
   <button onclick="logout()">Logout</button>
 </div>
 
-<!-- EMPLOYEE INVENTORY -->
-<div id="empBox" class="box hidden">
-  <h2>👷 Weekly Inventory</h2>
-  <input class="inv" data-name="Rice" placeholder="Rice stock">
-  <input class="inv" data-name="Oil" placeholder="Oil stock">
-  <input class="inv" data-name="Sugar" placeholder="Sugar stock">
-  <button onclick="saveInv()">Save Inventory</button>
+<div id="emp" class="box hidden">
+  <h2>👷 Employee Inventory</h2>
+  <input id="rice" placeholder="Rice stock">
+  <input id="oil" placeholder="Oil stock">
+  <button onclick="saveInv()">Save</button>
   <button onclick="logout()">Logout</button>
 </div>
 
 <script>
-// AUTO LOGIN
+const OWNER_ID="owner", OWNER_PASS="1234";
+const EMP_ID="employee", EMP_PASS="1111";
+
 const role = localStorage.getItem("role");
-if(role) loadUI(role);
+if(role) load(role);
 
-// LOGIN FUNCTION
-function login(){
+function doLogin(){
   const id = uid.value.trim();
-  const pass = pwd.value.trim();
+  const pw = pwd.value.trim();
 
-  if(id==="owner" && pass==="1234"){
+  if(id===OWNER_ID && pw===OWNER_PASS){
     localStorage.setItem("role","owner");
-    loadUI("owner");
+    load("owner");
   }
-  else if(id==="employee" && pass==="1111"){
-    localStorage.setItem("role","employee");
-    loadUI("employee");
+  else if(id===EMP_ID && pw===EMP_PASS){
+    localStorage.setItem("role","emp");
+    load("emp");
   }
   else{
-    msg.innerText="❌ Wrong ID or Password";
+    err.innerText="❌ Invalid Login";
   }
 }
 
-// LOAD UI
-function loadUI(role){
-  loginBox.classList.add("hidden");
-
-  if(role==="owner"){
-    ownerBox.classList.remove("hidden");
-    loadDashboard();
+function load(r){
+  login.classList.add("hidden");
+  if(r==="owner"){
+    owner.classList.remove("hidden");
+    const inv = JSON.parse(localStorage.getItem("inv")||"[]");
+    p.innerText = inv.length;
+    s.innerText = inv.reduce((t,i)=>t+i.stock,0);
   }
-  if(role==="employee"){
-    empBox.classList.remove("hidden");
+  if(r==="emp"){
+    emp.classList.remove("hidden");
   }
 }
 
-// DASHBOARD
-function loadDashboard(){
-  const inv = JSON.parse(localStorage.getItem("inventory")||"[]");
-  let total=0;
-  inv.forEach(i=>total+=i.stock);
-  p.innerText = inv.length;
-  s.innerText = total;
-  sale.innerText = localStorage.getItem("totalSale")||0;
-}
-
-// SAVE INVENTORY
 function saveInv(){
-  const data=[];
-  document.querySelectorAll(".inv").forEach(i=>{
-    data.push({name:i.dataset.name,stock:Number(i.value||0)});
-  });
-  localStorage.setItem("inventory",JSON.stringify(data));
-  alert("✅ Inventory Saved");
+  const data=[
+    {name:"Rice",stock:+rice.value||0},
+    {name:"Oil",stock:+oil.value||0}
+  ];
+  localStorage.setItem("inv",JSON.stringify(data));
+  alert("Inventory Saved");
 }
 
-// LOGOUT
 function logout(){
   localStorage.clear();
   location.reload();
