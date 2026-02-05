@@ -1,174 +1,93 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Valentine Proposal</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #ff9a9e, #fad0c4);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .card {
-      background: #fff;
-      padding: 20px;
-      border-radius: 20px;
-      text-align: center;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    }
-    .card img {
-      width: 100%;
-      border-radius: 15px;
-      margin-bottom: 15px;
-    }
-    h2 {
-      color: #e6005c;
-      margin-bottom: 20px;
-    }
-    .buttons button {
-      padding: 16px 40px;
-      margin: 15px;
-      font-size: 20px;
-      font-weight: bold;
-      border: none;
-      border-radius: 40px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    .yes {
-      background: #ff3366;
-      color: white;
-    }
-    .yes:hover {
-      background: #e6005c;
-    }
-    .no {
-      background: #ccc;
-    }
-    .result {
-      display: none;
-    }
-    .result h3 {
-      color: #ff3366;
-      margin-top: 15px;
-    }
-    @keyframes float {
-      0% { transform: translateY(0); opacity: 1; }
-      100% { transform: translateY(-100vh); opacity: 0; }
-    }
-    .heart {
-      position: fixed;
-      bottom: 0;
-      font-size: 24px;
-      animation: float 5s linear infinite;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>ASM Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:Arial;background:#f3f4f6}
+.box{max-width:420px;margin:60px auto;background:#fff;padding:20px;border-radius:10px}
+input,button{width:100%;padding:10px;margin:8px 0}
+button{background:#2563eb;color:#fff;border:none;border-radius:6px}
+.hidden{display:none}
+</style>
 </head>
 <body>
-  <div class="card">
-    <!-- Top Photo -->
-    <img src="myphoto.jpg" alt="My Photo" id="mainImage" /><!-- Question -->
-<h2 id="question">Sagira ❤️ Ricky</h2>
 
-<p id="subtext">Will you be my Valentine?</p>
-<div id="lovemeter" style="margin:15px 0;font-weight:bold;color:#e6005c;">Our Love: <span id="lovepercent">0%</span></div><!-- Buttons -->
-<div class="buttons" id="buttons" style="position:relative;">
-  <button class="yes" onclick="yesClicked()">Yes</button>
-  <button class="no" id="noBtn" onclick="noClicked()">No</button>
+<div id="login" class="box">
+  <h2>Login</h2>
+  <input id="uid" placeholder="User ID">
+  <input id="pwd" type="password" placeholder="Password">
+  <button onclick="doLogin()">Login</button>
+  <p id="err" style="color:red"></p>
 </div>
 
-<!-- Result -->
-<div class="result" id="result">
-  <img src="yesphoto.jpg" alt="Valentine Photo" />
-  <h3>Happy Valentine’s Day 💖</h3>
+<div id="owner" class="box hidden">
+  <h2>👑 Owner Dashboard</h2>
+  <p>Total Products: <b id="p">0</b></p>
+  <p>Total Stock: <b id="s">0</b></p>
+  <button onclick="logout()">Logout</button>
 </div>
 
-  </div>  <audio id="music" loop>
-  <source src="love(256k).mp3" type="audio/mpeg">
-</audio><audio id="music" loop>
-  <source src="love(256k).mp3" type="audio/mpeg">
-</audio>
-<audio id="heartbeat">
-  <source src="heartbeat.mp3" type="audio/mpeg">
-</audio>
-<audio id="voice">
-  <source src="voice.mp3" type="audio/mpeg">
-</audio><script>
-    let noCount = 0;
-    const noTexts = [
-      "Are you sure? 😢",
-      "Really sure? 🥺",
-      "Think again 💔",
-      "Next time? 😭",
-      "Seriously? 💘",
-      "Last chance! 😣"
-    ];
+<div id="emp" class="box hidden">
+  <h2>👷 Employee Inventory</h2>
+  <input id="rice" placeholder="Rice stock">
+  <input id="oil" placeholder="Oil stock">
+  <button onclick="saveInv()">Save</button>
+  <button onclick="logout()">Logout</button>
+</div>
 
-    function yesClicked() {
-      let p = 0;
-      const interval = setInterval(()=>{
-        p+=5; document.getElementById('lovepercent').innerText = p+'%';
-        if(p>=100) clearInterval(interval);
-      },50);
-      document.getElementById('music').play();
-      document.getElementById('heartbeat').play();
-      document.getElementById('voice').play();
-      if (navigator.vibrate) navigator.vibrate([200,100,200]);
-      document.documentElement.requestFullscreen?.();
-      document.getElementById('buttons').style.display = 'none';
-      document.getElementById('question').style.display = 'none';
-      document.getElementById('result').style.display = 'block';
-      launchConfetti();
-      typeWriter();
-    }
+<script>
+const OWNER_ID="owner", OWNER_PASS="1234";
+const EMP_ID="employee", EMP_PASS="1111";
 
-    function noClicked() {
-      const noBtn = document.getElementById('noBtn');
-      const yesBtn = document.querySelector('.yes');
-      yesBtn.style.transform = 'scale(1.1)';
-      setTimeout(()=>yesBtn.style.transform='scale(1)',300);
-      const noBtn = document.getElementById('noBtn');
-      const x = Math.random() * 300 - 150;
-      const y = Math.random() * 300 - 150;
-      noBtn.style.transform = `translate(${x}px, ${y}px)`;
-      const question = document.getElementById('question');
-      question.innerText = noTexts[noCount % noTexts.length];
-      noCount++;
-    }
+const role = localStorage.getItem("role");
+if(role) load(role);
 
-    function launchConfetti() {
-      for (let i = 0; i < 40; i++) {
-        const c = document.createElement('div');
-        c.innerText = '🎉';
-        c.style.position = 'fixed';
-        c.style.left = Math.random() * 100 + 'vw';
-        c.style.top = '-20px';
-        c.style.fontSize = '24px';
-        c.style.animation = 'float 4s linear';
-        document.body.appendChild(c);
-        setTimeout(() => c.remove(), 4000);
-      }
-    }
+function doLogin(){
+  const id = uid.value.trim();
+  const pw = pwd.value.trim();
 
-    function typeWriter() {
-      const text = 'From Ricky, with love 💌';
-      let i = 0;
-      const el = document.createElement('p');
-      el.style.fontSize = '20px';
-      el.style.color = '#e6005c';
-      document.getElementById('result').appendChild(el);
-      const interval = setInterval(() => {
-        el.innerText += text.charAt(i);
-        i++;
-        if (i >= text.length) clearInterval(interval);
-      }, 80);
-    }
-</script></body>
+  if(id===OWNER_ID && pw===OWNER_PASS){
+    localStorage.setItem("role","owner");
+    load("owner");
+  }
+  else if(id===EMP_ID && pw===EMP_PASS){
+    localStorage.setItem("role","emp");
+    load("emp");
+  }
+  else{
+    err.innerText="❌ Invalid Login";
+  }
+}
+
+function load(r){
+  login.classList.add("hidden");
+  if(r==="owner"){
+    owner.classList.remove("hidden");
+    const inv = JSON.parse(localStorage.getItem("inv")||"[]");
+    p.innerText = inv.length;
+    s.innerText = inv.reduce((t,i)=>t+i.stock,0);
+  }
+  if(r==="emp"){
+    emp.classList.remove("hidden");
+  }
+}
+
+function saveInv(){
+  const data=[
+    {name:"Rice",stock:+rice.value||0},
+    {name:"Oil",stock:+oil.value||0}
+  ];
+  localStorage.setItem("inv",JSON.stringify(data));
+  alert("Inventory Saved");
+}
+
+function logout(){
+  localStorage.clear();
+  location.reload();
+}
+</script>
+
+</body>
 </html>
